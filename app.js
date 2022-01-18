@@ -27,7 +27,7 @@ app.use("/blog", blogsRouter);
 
 //mongoose config
 mongoose.connect(
-  "mongodb+srv://nyamiv:eG8VJYnwYXNgJZg@cluster0.z3hhr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
+  "secret"
 );
 mongoose.connection.on("connected", () => {
   console.log("Mongo Atlas Connected.");
