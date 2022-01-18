@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include ../head %>
+  </head>
+  <body>
+    <% blogs.forEach(function(blog) { %>
+    <h1><%= blog.title %></h1>
+    <p><%= blog.content %></p>
+    <a class="btn btn-info" href="/blog/<%= blog.id %>/edit-post">Edit</a>
+    <% }); %>
+  </body>
+</html>
