@@ -5,9 +5,18 @@
   </head>
   <body>
     <% blogs.forEach(function(blog) { %>
+
     <h1><%= blog.title %></h1>
     <p><%= blog.content %></p>
-    <a class="btn btn-info" href="/blog/<%= blog.id %>/edit-post">Edit</a>
+    <p>Written by: <%= blog.createdBy.username %></p>
+    <div class="col">
+      <a class="col-md-3 btn btn-info" href="/blog/<%= blog.id %>/edit-blog"
+        >Edit</a
+      >
+      <a class="col-md-3 btn btn-danger" href="/blog/<%= blog.id %>/delete-blog"
+        >Delete</a
+      >
+    </div>
     <% }); %>
   </body>
 </html>
