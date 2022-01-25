@@ -50,21 +50,23 @@ const { ppid } = require("process");
 
 //main page
 app.get("/", (req, res) => {
-  console.log("req.username: ", req.user.username);
-  // let username = null;
-  // if (req.cookies && req.cookies.id) {
-  //   let users = req.app.get("sessions").filter((s) => s.id === req.cookies.id);
-  //   if (users.length) username = users[0].username;
-  // }
   res.render("index", { username: req.user.username });
 });
 
 //users
 app.get("/register", (req, res) => {
-  res.render("register");
+  if (req.user.id) {
+    res.redirect("/");
+  } else {
+    res.render("register");
+  }
 });
 
 app.post("/register", async (req, res) => {
+  if (req.user.id) {
+    res.redirect("/");
+    return;
+  }
   let user = await userModel.findOne({ username: req.body.username });
   if (user) {
     res.send(`Username is used by another user`);
@@ -72,6 +74,7 @@ app.post("/register", async (req, res) => {
     let salt = await crypto.randomBytes(50);
     salt = salt.toString("hex");
     let h = crypto.createHmac("sha256", salt);
+    h.update(req.body.password);
     h = h.digest("hex");
     let role = req.body.role;
     console.log("registered role: ", role);
@@ -79,6 +82,7 @@ app.post("/register", async (req, res) => {
     const newUser = await userModel.create({
       username: req.body.username,
       age: req.body.age,
+      fullname: req.body.fullname,
       hashedPass: h,
       salt: salt,
       role: role,
@@ -91,15 +95,25 @@ app.post("/register", async (req, res) => {
   }
 });
 app.get("/login", (req, res) => {
-  res.render("login");
+  if (req.user.id) {
+    //user da dang nhap thi khong the login nua
+    res.redirect("/");
+  } else {
+    res.render("login");
+  }
 });
 
 app.post("/login", async (req, res) => {
+  if (req.user.id) {
+    res.redirect("/");
+    return;
+  }
   let user = await userModel.findOne({
     username: req.body.username,
   });
   if (user) {
     let h = crypto.createHmac("sha256", user.salt);
+    h.update(req.body.password);
     h = h.digest("hex");
     if (h === user.hashedPass) {
       // let sessionId = crypto.randomBytes(10);
@@ -109,9 +123,16 @@ app.post("/login", async (req, res) => {
       //   username: user.username,
       // });
       // res.cookie("id", sessionId);
+      let fullname = "";
+      if (user.fullname) fullname = user.fullname;
 
       let token = jwt.sign(
-        { id: user._id, username: user.username, role: user.role },
+        {
+          id: user._id,
+          username: user.username,
+          role: user.role,
+          fullname: fullname,
+        },
         req.app.get("secretKey")
       );
       res.cookie("token", token);
@@ -132,13 +153,10 @@ app.get(
   })
 );
 
-app.get(
-  "/user",
-  authorize(async (req, res) => {
-    const users = await userModel.find({});
-    res.render("user/user", { users: users, currentUser: req.user });
-  })
-);
+app.get("/user", async (req, res) => {
+  const users = await userModel.find({});
+  res.render("user/user", { users: users, currentUser: req.user });
+});
 
 app.get(
   "/user/:id/edit-user",
@@ -165,6 +183,7 @@ app.post(
     //admin can edit self, admin cannot delete self
     const editedUser = await userModel.findByIdAndUpdate(req.params.id, {
       age: req.body.age,
+      fullname: req.body.fullname,
       role: req.body.role,
     });
     if (editedUser) {
@@ -208,11 +227,49 @@ app.get(
 
 //blogs
 app.get("/blog", async (req, res) => {
-  //populate to get createdBy user infos
-  //so we can display the username/fullname of createdBy user
-  const resp = await blogModel.find().populate("createdBy");
+  // let query = "";
+  // if (req.query.myPostOnly) {
+  //   query = req.query.searchTerm;
+  // }
+  //phan trang
+  let page = req.query.page ? Number(req.query.page) : 1;
+  page = isNaN(page) || page <= 0 ? 1 : page;
+  console.log("currPage: ", page);
+  const pageSize = 5;
+  //lay bai viet cua ban than
+  //bat buoc la user da dang nhap
+  let resp = [];
+  let noOfBlogs = 0;
+  if (req.query.myPostOnly) {
+    if (req.user && req.user.id) {
+      const currUser = await userModel.findById(req.user.id);
+      if (currUser) {
+        resp = await blogModel
+          .find({ createdBy: currUser.id })
+          .sort({ createdAt: "desc" })
+          .skip((page - 1) * pageSize)
+          .limit(pageSize)
+          //populate to get createdBy user infos
+          //so we can display the username/fullname of createdBy user
+          .populate("createdBy");
+        noOfBlogs = await blogModel.find({ createdBy: currUser.id }).count();
+      }
+    }
+  } else {
+    resp = await blogModel
+      .find()
+      .sort({ createdAt: "desc" })
+      .skip((page - 1) * pageSize)
+      .limit(pageSize)
+      //populate to get createdBy user infos
+      //so we can display the username/fullname of createdBy user
+      .populate("createdBy");
+    noOfBlogs = await blogModel.find({}).count();
+  }
   res.render("blog/blog", {
     blogs: resp,
+    page: page,
+    noOfBlogs: noOfBlogs,
     currentUser: req.user,
     title: "Blog",
   });
@@ -221,7 +278,7 @@ app.get("/blog", async (req, res) => {
 app.get(
   "/blog/add-blog",
   authorize(async (req, res) => {
-    res.render("blog/add-blog", { title: "Create blog" });
+    res.render("blog/add-blog");
   })
 );
 
@@ -246,6 +303,11 @@ app.post(
     }
   })
 );
+
+app.get("/blog/:id", async (req, res) => {
+  const resp = await blogModel.findById(req.params.id).populate("createdBy");
+  res.render("blog/blog-detail", { blog: resp, currentUser: req.user });
+});
 
 app.get(
   "/blog/:id/edit-blog",

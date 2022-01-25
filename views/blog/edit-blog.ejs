@@ -4,15 +4,24 @@
     <%- include ../head %>
   </head>
   <body>
+    <%- include ../header%>
+    <a href="/blog" class="btn btn-info">Quay lại</a>
     <form action="/blog/<%= blog.id %>/edit-blog" method="post">
       <input type="hidden" type="text" name="id" value="<%= blog.id %>" />
       <div class="row mt-5">
         <label class="col-md-3">Title</label>
-        <input class="col-md-9" type="text" name="title" value="<%= blog.title %>" />
+        <input
+          class="col-md-9"
+          type="text"
+          name="title"
+          value="<%= blog.title %>"
+        />
       </div>
       <div class="row mt-5">
         <label class="col-md-3">Content</label>
-        <input class="col-md-9" type="text" name="content" value="<%= blog.content %>"/>
+        <textarea class="col-md-9" name="content" rows="10">
+<%= blog.content %></textarea
+        >
         <div class="col-md-9"></div>
         <button class="col-md-3 btn-danger" type="submit">Update</button>
       </div>

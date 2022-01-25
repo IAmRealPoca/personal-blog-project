@@ -2,8 +2,11 @@
 <html lang="en">
   <head>
     <%- include ../head %>
+    <title>Thêm bài viết</title>
   </head>
   <body>
+    <%- include ../header%>
+    <a href="/blog" class="btn btn-info">Quay lại</a>
     <form action="/blog/add-blog" method="post">
       <div class="row mt-5">
         <label class="col-md-3">Title</label>
@@ -11,7 +14,8 @@
       </div>
       <div class="row mt-5">
         <label class="col-md-3">Content</label>
-        <input class="col-md-9" type="text" name="content" />
+        <!-- <input class="col-md-9" type="text" name="content" /> -->
+        <textarea class="col-md-9" name="content" rows="10"></textarea>
         <button class="col-md-3 btn-danger" type="submit">Post</button>
       </div>
     </form>

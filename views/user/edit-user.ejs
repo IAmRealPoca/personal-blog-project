@@ -8,7 +8,7 @@
     <form action="/user/<%= user.id %>/edit-user" method="post">
       <input type="hidden" type="text" name="id" value="<%= user.id %>" />
       <div class="row mt-5">
-        <label class="col-md-3">Username</label>
+        <label class="col-md-3">Tên đăng nhập</label>
         <input
           class="col-md-9"
           disabled
@@ -32,7 +32,16 @@
         </select>
       </div>
       <div class="row mt-5">
-        <label class="col-md-3">Age</label>
+        <label class="col-md-3">Tên hiển thị</label>
+        <input
+          class="col-md-9"
+          type="text"
+          name="fullname"
+          value="<%= user.fullname %>"
+        />
+      </div>
+      <div class="row mt-5">
+        <label class="col-md-3">Tuổi</label>
         <input
           class="col-md-9"
           type="number"

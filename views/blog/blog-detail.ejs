@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include ../head %>
+    <title>Bài viết</title>
+  </head>
+  <body>
+    <%- include ../header%>
+    <div class="container">
+      <div class="row row-offcanvas row-offcanvas-right">
+        <div class="col-xs-12 col-sm-9">
+          <div class="jumbotron">
+            <a href="/blog" class="btn btn-info">Quay lại</a>
+
+            <h1><%= blog.title %></h1>
+            <h4>
+              Ngày đăng: <%= new Date(blog.createdAt).getDay() %>/<%=
+              new Date(blog.createdAt).getMonth() + 1 %>/<%= new
+              Date(blog.createdAt).getFullYear() %>
+            </h4>
+
+            <!-- author -->
+
+            <% if (blog.createdBy) { %>
+            <p>Viết bởi: <%= blog.createdBy.fullname %></p>
+            <%} else { %>
+            <p>Viết bởi: [deleted]</p>
+            <!-- end author -->
+            <!-- actions -->
+            <% } if (currentUser && blog.createdBy) { if (currentUser.username
+            === blog.createdBy.username) { %>
+            <div class="col">
+              <a
+                class="col-md-3 btn btn-info"
+                href="/blog/<%= blog.id %>/edit-blog"
+                >Sửa</a
+              >
+              <a
+                class="col-md-3 btn btn-danger"
+                href="/blog/<%= blog.id %>/delete-blog"
+                >Xóa</a
+              >
+            </div>
+            <% }} %>
+            <!-- end actions -->
+            <p><%= blog.content %></p>
+          </div>
+        </div>
+      </div>
+      <%- include ../footer%>
+    </div>
+  </body>
+</html>

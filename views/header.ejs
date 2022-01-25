@@ -9,19 +9,22 @@
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
         <li class="nav-item">
-          <a href="/" class="nav-link active">Trang chủ</a>
+          <a href="/" class="nav-link">Trang chủ</a>
         </li>
         <li class="nav-item">
           <a href="/blog" class="nav-link">Bài viết</a>
         </li>
-        <li id="user-manage-link" style="display: none">
-          <a href="/user" class="nav-link">Quản lý user</a>
+        <li id="user-manage-link">
+          <a href="/user" class="nav-link">Người dùng</a>
         </li>
       </ul>
     </div>
 
     <span id="username-zone"></span>
     <a id="login-logout-zone" href="/login" class="nav-link">Đăng nhập</a>
+    <a id="register-zone" href="/register" class="nav-link btn" display="block"
+      >Đăng ký</a
+    >
   </div>
   <script>
     //lay token de biet user da dang nhap chua
@@ -43,13 +46,19 @@
     var user = parseJwt(token.substring(6));
     console.log(user);
     if (user) {
-      document.getElementById("username-zone").innerHTML = user.username;
+      //show username when logged in
+      document.getElementById("username-zone").innerHTML = user.fullname;
+      //change login to logout button
       var loginLogoutButton = document.getElementById("login-logout-zone");
       loginLogoutButton.innerHTML = "Đăng xuất";
       loginLogoutButton.href = "/logout";
-      if (user.role === "ADMIN") {
-        document.getElementById("user-manage-link").style.display = "block";
-      }
+      //hide register button
+      document.getElementById("register-zone").style.display = "none";
+      //show user page if logged in user is admin
+      //eh, all user can see list of user, just can't edit or delete if not admin
+      // if (user.role === "ADMIN") {
+      // document.getElementById("user-manage-link").style.display = "block";
+      // }
     }
   </script>
 </nav>
