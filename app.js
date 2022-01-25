@@ -393,7 +393,30 @@ app.get(
 );
 //end blogs
 
+//tao san 1 tai khoan admin mac dinh
+async function createDefaultAdmin() {
+  const data = await userModel.find({ role: "ADMIN" }).exec();
+  if (data.length !== 0) {
+    //da co tk admin, ko can tao moi
+    return;
+  }
+  let salt = await crypto.randomBytes(50);
+  salt = salt.toString("hex");
+  let h = crypto.createHmac("sha256", salt);
+  h.update("matKhauBiMat");
+  h = h.digest("hex");
+  const newUser = await userModel.create({
+    username: "admin",
+    age: 20,
+    fullname: "Quản trị viên",
+    hashedPass: h,
+    salt: salt,
+    role: "ADMIN",
+  });
+}
+
 const port = 3000;
 app.listen(port, () => {
+  createDefaultAdmin();
   console.log("Listening on port", port);
 });
