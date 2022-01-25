@@ -7,7 +7,7 @@ const jwt = require("jsonwebtoken");
 
 const authenticate = require("./authenticate");
 const tokenAuth = require("./tokenAuth");
-const auth = require("./auth");
+const authorize = require("./authorize");
 
 const app = express();
 
@@ -73,10 +73,15 @@ app.post("/register", async (req, res) => {
     salt = salt.toString("hex");
     let h = crypto.createHmac("sha256", salt);
     h = h.digest("hex");
+    let role = req.body.role;
+    console.log("registered role: ", role);
+    if (!role) role = "USER";
     const newUser = await userModel.create({
       username: req.body.username,
+      age: req.body.age,
       hashedPass: h,
       salt: salt,
+      role: role,
     });
     if (newUser) {
       res.redirect("/login");
@@ -106,18 +111,99 @@ app.post("/login", async (req, res) => {
       // res.cookie("id", sessionId);
 
       let token = jwt.sign(
-        { id: user._id, username: user.username },
+        { id: user._id, username: user.username, role: user.role },
         req.app.get("secretKey")
       );
       res.cookie("token", token);
       res.redirect("/");
     } else {
-      res.send(`${user.username} logins fail. Wrong pass`);
+      res.send(`${user.username} logins fail.`);
     }
   } else {
-    res.send(`${user.username} logins fail.`);
+    res.send(`Login failed.`);
   }
 });
+
+app.get(
+  "/logout",
+  authorize(async (req, res) => {
+    res.clearCookie("token");
+    res.redirect("/");
+  })
+);
+
+app.get(
+  "/user",
+  authorize(async (req, res) => {
+    const users = await userModel.find({});
+    res.render("user/user", { users: users, currentUser: req.user });
+  })
+);
+
+app.get(
+  "/user/:id/edit-user",
+  authorize(async (req, res) => {
+    const selectedUser = await userModel.findById(req.params.id);
+    if (!selectedUser) {
+      res.send("User not found");
+      return;
+    }
+    res.render("user/edit-user", {
+      user: selectedUser,
+    });
+  }, "ADMIN")
+);
+
+app.post(
+  "/user/:id/edit-user",
+  authorize(async (req, res) => {
+    const user = await userModel.findById(req.params.id);
+    if (!user) {
+      res.send("User not found");
+      return;
+    }
+    //admin can edit self, admin cannot delete self
+    const editedUser = await userModel.findByIdAndUpdate(req.params.id, {
+      age: req.body.age,
+      role: req.body.role,
+    });
+    if (editedUser) {
+      res.redirect("/user");
+    } else {
+      res.send("Failed to edit user");
+    }
+  }, "ADMIN")
+);
+
+app.get(
+  "/user/:id/delete-user",
+  authorize(async (req, res) => {
+    const selectedUser = await userModel.findById(req.params.id);
+    if (!selectedUser) {
+      res.send("User not found");
+      return;
+    }
+    //admin cannot delete themself
+    if (req.user.id === selectedUser.id) {
+      res.send("Cannot delete yourself");
+      return;
+    }
+    //blogs and comments made by deleted user shall be deleted too
+    const blogOfDeletedUser = await blogModel.find({
+      createdBy: selectedUser.id,
+    });
+    if (blogOfDeletedUser && blogOfDeletedUser.length > 0) {
+      blogOfDeletedUser.forEach(async (e) => {
+        await blogModel.findByIdAndDelete(e.id);
+      });
+    }
+    const result = await userModel.deleteOne({ _id: req.params.id });
+    if (result) {
+      res.redirect("/user");
+    }
+  }, "ADMIN")
+);
+
 //end users
 
 //blogs
@@ -125,19 +211,23 @@ app.get("/blog", async (req, res) => {
   //populate to get createdBy user infos
   //so we can display the username/fullname of createdBy user
   const resp = await blogModel.find().populate("createdBy");
-  res.render("blog/blog", { blogs: resp, title: "Blog" });
+  res.render("blog/blog", {
+    blogs: resp,
+    currentUser: req.user,
+    title: "Blog",
+  });
 });
 
 app.get(
   "/blog/add-blog",
-  auth(async (req, res) => {
+  authorize(async (req, res) => {
     res.render("blog/add-blog", { title: "Create blog" });
   })
 );
 
 app.post(
   "/blog/add-blog",
-  auth(async (req, res) => {
+  authorize(async (req, res) => {
     const currUser = await userModel.findById(req.user.id);
     if (currUser) {
       const newPost = await blogModel.create({
@@ -159,7 +249,7 @@ app.post(
 
 app.get(
   "/blog/:id/edit-blog",
-  auth(async (req, res) => {
+  authorize(async (req, res) => {
     const user = await userModel.findById(req.user.id);
     const currPost = await blogModel.findById(req.params.id);
     if (!currPost) {
@@ -190,7 +280,7 @@ app.get(
 
 app.post(
   "/blog/:id/edit-blog",
-  auth(async (req, res) => {
+  authorize(async (req, res) => {
     const currPost = await blogModel.findById(req.params.id);
     if (!currPost) {
       res.send("NONE");
@@ -217,27 +307,31 @@ app.post(
   })
 );
 
-app.get("/blog/:id/delete-blog", auth(async (req, res) => {
-  const currPost = await blogModel.findById(req.params.id);
-  if (!currPost) {
-    res.send("NONE");
-  }
-  const user = await userModel.findById(req.user.id);
-  if (!user) {
-    res.render("forbidden");
-    return;
-  }
-  if (currPost.createdBy.toString() !== user.id) {
-    res.render("forbidden");
-    return;
-  }
-  const result = await blogModel.deleteOne({ _id: req.params.id });
-  if (result) {
-    res.redirect("/blog");
-  }
-}));
+app.get(
+  "/blog/:id/delete-blog",
+  authorize(async (req, res) => {
+    const currPost = await blogModel.findById(req.params.id);
+    if (!currPost) {
+      res.send("NONE");
+    }
+    const user = await userModel.findById(req.user.id);
+    if (!user) {
+      res.render("forbidden");
+      return;
+    }
+    if (currPost.createdBy.toString() !== user.id) {
+      res.render("forbidden");
+      return;
+    }
+    const result = await blogModel.deleteOne({ _id: req.params.id });
+    if (result) {
+      res.redirect("/blog");
+    }
+  })
+);
 //end blogs
 
-app.listen(3001, () => {
-  console.log("Listening on port 3000");
+const port = 3000;
+app.listen(port, () => {
+  console.log("Listening on port", port);
 });

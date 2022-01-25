@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include ../head %>
+    <title>Edit user</title>
+  </head>
+  <body>
+    <form action="/user/<%= user.id %>/edit-user" method="post">
+      <input type="hidden" type="text" name="id" value="<%= user.id %>" />
+      <div class="row mt-5">
+        <label class="col-md-3">Username</label>
+        <input
+          class="col-md-9"
+          disabled
+          type="text"
+          name="username"
+          value="<%= user.username %>"
+        />
+      </div>
+      <div class="row mt-5">
+        <label class="col-md-3">Role</label>
+        <select class="col-md-9" name="role">
+          <% if (user.role === "USER") {%>
+          <option value="USER" selected>User</option>
+          <% } else {%>
+          <option value="USER">User</option>
+          <%} if (user.role === "ADMIN") {%>
+          <option value="ADMIN" selected>Admin</option>
+          <% } else {%>
+          <option value="ADMIN">Admin</option>
+          <% } %>
+        </select>
+      </div>
+      <div class="row mt-5">
+        <label class="col-md-3">Age</label>
+        <input
+          class="col-md-9"
+          type="number"
+          name="age"
+          value="<%= user.age %>"
+        />
+        <div class="col-md-9"></div>
+        <button class="col-md-3 btn-danger" type="submit">Update</button>
+      </div>
+    </form>
+  </body>
+</html>

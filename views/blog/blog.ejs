@@ -4,11 +4,17 @@
     <%- include ../head %>
   </head>
   <body>
+    <%- include ../header%>
     <% blogs.forEach(function(blog) { %>
 
     <h1><%= blog.title %></h1>
     <p><%= blog.content %></p>
+    <% if (blog.createdBy) { %>
     <p>Written by: <%= blog.createdBy.username %></p>
+    <%} else { %>
+    <p>Written by: [deleted]</p>
+    <% } if (currentUser && blog.createdBy) { if (currentUser.username ===
+    blog.createdBy.username) { %>
     <div class="col">
       <a class="col-md-3 btn btn-info" href="/blog/<%= blog.id %>/edit-blog"
         >Edit</a
@@ -17,6 +23,7 @@
         >Delete</a
       >
     </div>
-    <% }); %>
+    <% }}}); %>
+    <%- include ../footer%>
   </body>
 </html>

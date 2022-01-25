@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include ../head %>
+  </head>
+  <body>
+    <% users.forEach(function(user) { %>
+
+    <h1><%= user.username %></h1>
+    <p>Age: <%= user.age %></p>
+    <p>Role: <%= user.role %></p>
+    <% if (currentUser) { if (currentUser.role === "ADMIN")
+    { %>
+    <div class="col">
+      <a class="col-md-3 btn btn-info" href="/user/<%= user.id %>/edit-user"
+        >Edit</a
+      >
+      <a class="col-md-3 btn btn-danger" href="/user/<%= user.id %>/delete-user"
+        >Delete</a
+      >
+    </div>
+    <% }}}); %>
+  </body>
+</html>
